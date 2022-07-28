@@ -55,6 +55,16 @@ app.get('/image', async (req, res) => {
   }
 });
 
+app.get('/images', (req, res) => {
+  try {
+    const filepath = `${constants.BASE_PATH}/images/${req.query.params}`;
+    return res.sendFile(filepath);
+  } catch (err) {
+    console.log('images --- get --- error', err);
+    return res.send('Error occured');
+  }
+});
+
 if (!module.parent) {
   httpServer.listen(constants.PORT, err => {
     if (err) {
