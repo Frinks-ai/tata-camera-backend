@@ -15,13 +15,22 @@ middlewaresConfig(app);
 app.get('/image', async (req, res) => {
   try {
     // execute query on camera_backend
-    execSync('python3 scripts/camera.py');
+    execSync('v4l2-ctl -d /dev/video0 -c exposure_absolute=500');
+    execSync(
+      `ffmpeg -y -f video4linux2 -video_size 2592x1944 -loglevel error -i /dev/video0 -filter:v "scale=2592:-1:flags=lanczos,unsharp=5:5:1.0:5:5:0.0" -q:v 2 -vframes 1 -update 1 ${constants.BASE_PATH}/images/upload.bmp`
+    );
     const filepath = `${constants.BASE_PATH}/images/upload.bmp`;
     const image = fs.readFileSync(filepath, 'base64');
     const base64Data = image.replace(/^data:image\/png;base64,/, '');
     // upload the image to python backend
-    const uploadRes = await axios.post(`${constants.PYTHON_BACKEND}/image`, {
-      image: base64Data
+    const uploadRes = await axios({
+      method: 'post',
+      url: `${constants.PYTHON_BACKEND}/image`,
+      data: {
+        image: base64Data
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
     });
     if (uploadRes.data.success) {
       res.status(200).json({
@@ -34,11 +43,11 @@ app.get('/image', async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        status: 'File upload error please retry'
+        status: 'File upload unsuccessful'
       });
     }
   } catch (err) {
-    console.log('image --- get --- error', err);
+    console.log('image --- get --- error', err.message);
     res.status(400).json({
       success: false,
       status: 'File upload error please retry'
