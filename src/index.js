@@ -15,9 +15,11 @@ middlewaresConfig(app);
 app.get('/image', async (req, res) => {
   try {
     // execute query on camera_backend
-    execSync('v4l2-ctl -d /dev/video0 -c exposure_absolute=300');
     execSync(
-      `ffmpeg -y -f video4linux2 -video_size 2592x1944 -loglevel error -i /dev/video0 -filter:v "scale=2592:-1:flags=lanczos,unsharp=5:5:1.0:5:5:0.0" -q:v 2 -vframes 1 -update 1 ${constants.BASE_PATH}/images/upload.bmp`
+      `v4l2-ctl -d /dev/video${constants.CAMERA_INDEX} -c exposure_absolute=${constants.EXPOSURE}`
+    );
+    execSync(
+      `ffmpeg -y -f video4linux2 -video_size 2592x1944 -loglevel error -i /dev/video${constants.CAMERA_INDEX} -filter:v "scale=2592:-1:flags=lanczos,unsharp=5:5:1.0:5:5:0.0" -q:v 2 -vframes 1 -update 1 ${constants.BASE_PATH}/images/upload.bmp`
     );
     const filepath = `${constants.BASE_PATH}/images/upload.bmp`;
     const image = fs.readFileSync(filepath, 'base64');
